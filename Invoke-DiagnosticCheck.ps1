@@ -217,4 +217,12 @@ Describe "Diagnostic check" {
             }
         }
     }
+
+    Context "Host Networks Service (HNS) state" {
+        It "there are no 'Layered' invalid networks (usually happens after reboot)" {
+            Assert-RunningAsAdmin
+            $BadNetworks = Get-ContainerNetwork | Where-Object Name -Like "Layered*"
+            $BadNetworks | Should BeNullOrEmpty
+        }
+    }
 }

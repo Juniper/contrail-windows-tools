@@ -57,16 +57,19 @@ Describe "Diagnostic check" {
             vif.exe --list | Select-String "pkt0" | Should Not BeNullOrEmpty
         }
 
-        It "opens ksync device" {
-            # Get-ChildItem "//./vrouterKsync" | Should Not BeNullOrEmpty
+        It "ksync device is dialable using contrail utility" {
+            vif.exe --list | Out-Null
+            $LASTEXITCODE | Should Be 0
         }
 
-        It "opens pkt0 device" {
-            # Get-ChildItem "//./vrouterBridge" | Should Not BeNullOrEmpty
+        It "flow device is dialable using contrail utility" {
+            vif.exe --list | Out-Null
+            $LASTEXITCODE | Should Be 0
         }
 
-        It "opens flow0 device" {
-            # Get-ChildItem "//./vrouterFlow" | Should Not BeNullOrEmpty
+        It "bridge table device is dialable using contrail utility" {
+            .\rt.exe --dump 0 --family bridge | Out-Null
+            $LASTEXITCODE | Should Be 0
         }
     }
 
@@ -79,7 +82,7 @@ Describe "Diagnostic check" {
             Get-Service "ContrailAgent" | Select-Object -ExpandProperty Status `
                 | Should Be "Running"
         }
-        
+
         It "serves an Agent API on TCP socket" {
             $Result = Test-NetConnection -ComputerName localhost -Port 9091
             $Result.TcpTestSucceeded | Should Be $true
@@ -196,7 +199,7 @@ Describe "Diagnostic check" {
 
         It "there are no Contrail networks in Docker with incorrect driver" {
             # After reboot, networks handled by 'Contrail' plugin will instead have 'transparent'
-            # plugin assigned. Make sure there are no networks like this. 
+            # plugin assigned. Make sure there are no networks like this.
             $Raw = docker network ls --filter 'driver=transparent'
             $Matches =  $Raw | Select-String "Contrail:.*"
 

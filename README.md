@@ -1,4 +1,4 @@
-# Compute node scripts
+# Contrail Windows tools
 
 This repository contains utility scripts used for managing Contrail Windows compute nodes.
 
@@ -16,12 +16,12 @@ is running correctly. It doesn't introduce any changes, so should be safe to run
 User must specify command line parameters depending on compute node configuration / deployment
 method.
 
-### Deployed via Contrail-Ansible-Deployer
+**Deployed via Contrail-Ansible-Deployer**
 
 You will need to specify `AdapterName` parameter to value of `WINDOWS_PHYSICAL_INTERFACE`.
 Please refer to [official Contrail-Ansible-Deployer example](https://github.com/codilime/contrail-ansible-deployer/blob/master/config/instances.yaml.bms_win_example).
 
-### Deployed in Windows Sanity tests
+**Deployed in Windows Sanity tests**
 
 You will need to specify `AdapterName`, `VHostName` and `forwardingExtensionName` parameters to
 their equivalent field under `system` section in `testenv-conf.yaml` file:

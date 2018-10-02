@@ -160,7 +160,6 @@ Describe "Diagnostic check" {
     }
 
     Context "vRouter certificate" {
-        # TODO: figure out how to test for these
         It "test signing is ON" {
             $Output = bcdedit /enum | Select-String 'testsigning' | Select-String 'Yes'
             if ($Output) {
@@ -172,7 +171,19 @@ Describe "Diagnostic check" {
         }
 
         It "vRouter test certificate is present" {
-            # Optional test
+            $certs = Get-ChildItem -Path cert:\LocalMachine\Root | `
+                Where-Object Subject -Match "CN=codilime.com"
+            if (!$certs) {
+                $Msg = "Test certificate is not imported to cert:\LocalMachine\Root cert store."
+                Set-TestInconclusive $Msg
+            }
+
+            $certs = Get-ChildItem -Path cert:\LocalMachine\TrustedPublisher | `
+                Where-Object Subject -Match "CN=codilime.com"
+            if (!$certs) {
+                $Msg = "Test certificate is not imported to cert:\LocalMachine\TrustedPublisher cert store."
+                Set-TestInconclusive $Msg
+            }
         }
 
         It "vRouter actual certificate is present" {

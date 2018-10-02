@@ -1,0 +1,22 @@
+### QtCreator build directories and user config files ##
+build-*/
+*.qbs.user
+
+### Vagrant ###
+.vagrant/
+
+
+### temp files ###
+*.swp
+*.swo
+*~
+
+### Python ###
+*.pyc
+venv
+
+### Visual Studio Code ###
+.vscode/
+
+### Ansible ###
+*.retry

@@ -6,7 +6,8 @@
 Param (
     [Parameter(Mandatory = $false)] [String] $AdapterName = "Ethernet1",
     [Parameter(Mandatory = $false)] [String] $VHostName = "vEthernet (HNSTransparent)",
-    [Parameter(Mandatory = $false)] [String] $ForwardingExtensionName = "vRouter forwarding extension"
+    [Parameter(Mandatory = $false)] [String] $ForwardingExtensionName = "vRouter forwarding extension",
+    [Parameter(Mandatory = $false)] [String] $ContrailLogPath = "C:\ProgramData\Contrail\var\log\contrail\"
 )
 
 $VMSwitchName = "Layered?$AdapterName"
@@ -37,10 +38,6 @@ Describe "Diagnostic check" {
                 | Should Be $true
         }
 
-        It "didn't assert or panic lately" {
-
-        }
-
         It "vhost vif is present" {
             $VHostIfAlias = Get-NetAdapter -InterfaceAlias $VHostName `
                 | Select-Object -ExpandProperty ifName
@@ -57,16 +54,19 @@ Describe "Diagnostic check" {
             vif.exe --list | Select-String "pkt0" | Should Not BeNullOrEmpty
         }
 
-        It "opens ksync device" {
-            # Get-ChildItem "//./vrouterKsync" | Should Not BeNullOrEmpty
+        It "ksync device is usable using contrail utility" {
+            vif.exe --list | Out-Null
+            $LASTEXITCODE | Should Be 0
         }
 
-        It "opens pkt0 device" {
-            # Get-ChildItem "//./vrouterBridge" | Should Not BeNullOrEmpty
+        It "flow device is usable using contrail utility" {
+            flow.exe -l | Out-Null
+            $LASTEXITCODE | Should Be 0
         }
 
-        It "opens flow0 device" {
-            # Get-ChildItem "//./vrouterFlow" | Should Not BeNullOrEmpty
+        It "bridge table device is usable using contrail utility" {
+            rt.exe --dump 0 --family bridge | Out-Null
+            $LASTEXITCODE | Should Be 0
         }
     }
 
@@ -79,14 +79,16 @@ Describe "Diagnostic check" {
             Get-Service "ContrailAgent" | Select-Object -ExpandProperty Status `
                 | Should Be "Running"
         }
-        
+
         It "serves an Agent API on TCP socket" {
             $Result = Test-NetConnection -ComputerName localhost -Port 9091
             $Result.TcpTestSucceeded | Should Be $true
         }
 
         It "didn't assert or panic lately" {
-
+            $Logs = Get-ChildItem $ContrailLogPath -Filter "*contrail-vrouter-agent*"
+            $Output = Select-String -Pattern "Assertion failed" -Path $Logs
+            $Output | Should BeNullOrEmpty
         }
     }
 
@@ -160,7 +162,13 @@ Describe "Diagnostic check" {
     Context "vRouter certificate" {
         # TODO: figure out how to test for these
         It "test signing is ON" {
-            # Optional test
+            $Output = bcdedit /enum | Select-String 'testsigning' | Select-String 'Yes'
+            if ($Output) {
+                $true | Should Be $true
+            } else {
+                $Msg = "Test signing is disabled. Use bcdedit.exe system command to enable it."
+                Set-TestInconclusive $Msg
+            }
         }
 
         It "vRouter test certificate is present" {
@@ -196,7 +204,7 @@ Describe "Diagnostic check" {
 
         It "there are no Contrail networks in Docker with incorrect driver" {
             # After reboot, networks handled by 'Contrail' plugin will instead have 'transparent'
-            # plugin assigned. Make sure there are no networks like this. 
+            # plugin assigned. Make sure there are no networks like this.
             $Raw = docker network ls --filter 'driver=transparent'
             $Matches =  $Raw | Select-String "Contrail:.*"
 

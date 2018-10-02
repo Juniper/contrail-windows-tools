@@ -159,7 +159,13 @@ Describe "Diagnostic check" {
     Context "vRouter certificate" {
         # TODO: figure out how to test for these
         It "test signing is ON" {
-            # Optional test
+            $bcdeditOutput = bcdedit /enum | Select-String 'testsigning' | Select-String 'Yes'
+            if ($bcdeditOutput) {
+                $true | Should Be $true
+            } else {
+                $Msg = "Test signing is disabled. Use bcdedit.exe system command to enable it."
+                Set-TestInconclusive $Msg
+            }
         }
 
         It "vRouter test certificate is present" {

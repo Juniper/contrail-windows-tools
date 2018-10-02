@@ -54,18 +54,18 @@ Describe "Diagnostic check" {
             vif.exe --list | Select-String "pkt0" | Should Not BeNullOrEmpty
         }
 
-        It "ksync device is dialable using contrail utility" {
+        It "ksync device is usable using contrail utility" {
             vif.exe --list | Out-Null
             $LASTEXITCODE | Should Be 0
         }
 
-        It "flow device is dialable using contrail utility" {
-            vif.exe --list | Out-Null
+        It "flow device is usable using contrail utility" {
+            flow.exe -l | Out-Null
             $LASTEXITCODE | Should Be 0
         }
 
-        It "bridge table device is dialable using contrail utility" {
-            .\rt.exe --dump 0 --family bridge | Out-Null
+        It "bridge table device is usable using contrail utility" {
+            rt.exe --dump 0 --family bridge | Out-Null
             $LASTEXITCODE | Should Be 0
         }
     }

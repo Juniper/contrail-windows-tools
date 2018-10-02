@@ -34,3 +34,51 @@ system:
   forwardingExtensionName: vRouter forwarding extension
 ...
 ```
+## Clear-ComputeNode.ps1
+
+This script:
+
+1. Uninstalls all components of Tungsten Fabric.
+2. Removes all services created during installation.
+3. Uninstalls all docker images, removes all containers and Docker networks.
+4. Removes all HNS networks.
+5. Removes installation directory and directories with logs and configuration files.
+
+All operations are executed on a local machine.
+
+Example invocation:
+```
+.\Clear-ComputeNode.ps1 `
+    -AdapterName "Ethernet1" `
+    -ForwardingExtensionName "vRouter forwarding extension" `
+    -VMSwitchName "Layered Ethernet1" `
+    -ConfigAndLogDir "C:\ProgramData\Contrail" `
+    -InstallationDir "C:\Program Files\Juniper Networks"
+```
+
+All arguments are optional. Default values are demonstrated in the example above.
+
+Arguments `AdapterName`, `ForwardingExtensionName` and `VMSwitchName` refer to: name of physical interface controller by vRouter, name of forwarding extension and name of virtual switch created by vRouter.
+
+## Clear-RemoteComputeNodes.ps1
+
+This script runs clean up script on remote compute nodes described by comma separated list of addresses given in `Addresses` argument (e.g. `"10.0.19.5, 10.0.19.83"`)
+
+Example invocation:
+```
+.\Clear-RemoteComputeNodes.ps1 `
+    -ScriptFileName "Clear-ComputeNode.ps1" `
+    -Addresses "127.0.0.1" `
+    -IndividualCredentials `
+    -AdapterName "Ethernet1" `
+    -ForwardingExtensionName "vRouter forwarding extension" `
+    -VMSwitchName "Layered Ethernet1" `
+    -ConfigAndLogDir "C:\ProgramData\Contrail" `
+    -InstallationDir "C:\Program Files\Juniper Networks"
+```
+
+All arguments are optional. Default values are demonstrated in the example above.
+
+Arguments AdapterName, ForwardingExtensionName, VMSwitchName, ConfigAndLogDir, InstallationDir are forwarded to the script pointed by ScriptFileName.
+
+If `IndividualCredentials` switch is enabled, the script is going to ask for credentials for each given address independently. By default it is assumed, that all remote compute nodes share the same credentials.

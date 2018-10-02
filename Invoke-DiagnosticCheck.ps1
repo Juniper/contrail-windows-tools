@@ -37,10 +37,6 @@ Describe "Diagnostic check" {
                 | Should Be $true
         }
 
-        It "didn't assert or panic lately" {
-
-        }
-
         It "vhost vif is present" {
             $VHostIfAlias = Get-NetAdapter -InterfaceAlias $VHostName `
                 | Select-Object -ExpandProperty ifName

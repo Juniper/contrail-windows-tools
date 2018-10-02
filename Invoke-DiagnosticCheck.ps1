@@ -6,7 +6,8 @@
 Param (
     [Parameter(Mandatory = $false)] [String] $AdapterName = "Ethernet1",
     [Parameter(Mandatory = $false)] [String] $VHostName = "vEthernet (HNSTransparent)",
-    [Parameter(Mandatory = $false)] [String] $ForwardingExtensionName = "vRouter forwarding extension"
+    [Parameter(Mandatory = $false)] [String] $ForwardingExtensionName = "vRouter forwarding extension",
+    [Parameter(Mandatory = $false)] [String] $ContrailLogPath = "C:\ProgramData\Contrail\var\log\contrail\"
 )
 
 $VMSwitchName = "Layered?$AdapterName"
@@ -85,7 +86,9 @@ Describe "Diagnostic check" {
         }
 
         It "didn't assert or panic lately" {
-
+            $Logs = Get-ChildItem $ContrailLogPath -Filter "*contrail-vrouter-agent*"
+            $Output = Select-String -Pattern "Assertion failed" -Path $Logs
+            $Output | Should BeNullOrEmpty
         }
     }
 

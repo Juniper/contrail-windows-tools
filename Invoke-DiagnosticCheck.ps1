@@ -137,6 +137,34 @@ Describe "Diagnostic check" {
             Get-VMSwitch "Layered?$AdapterName" | Should Not BeNullOrEmpty
         }
 
+        It "Visual DLLs are present in C:/Windows/System32 directory" {
+            function Assert-AreDLLsPresent {
+                Param (
+                    [Parameter(Mandatory=$true)] $ExitCode
+                )
+                #https://msdn.microsoft.com/en-us/library/cc704588.aspx
+                #Value below is taken from the link above and it indicates
+                #that application failed to load some DLL.
+                $MissingDLLsErrorReturnCode = [int64]0xC0000135
+
+                if ([int64]$ExitCode -eq $MissingDLLsErrorReturnCode) {
+                    throw "Some Visual DLL isn't present in C:/Windows/System32"
+                }
+            }
+            $AGENT_EXECUTABLE_PATH = "C:/Program Files/Juniper Networks/agent/contrail-vrouter-agent.exe"
+            $Invocations = @(
+                "vif.exe",
+                "rt.exe",
+                "flow.exe",
+                "nh.exe",
+                $AGENT_EXECUTABLE_PATH
+            )
+            foreach ($Invocation in $Invocations) {
+                & $Invocation --version 2>&1 | Out-Null
+                { Assert-AreDLLsPresent -ExitCode $LastExitCode } | Should Not Throw
+            }
+        }
+
         It "can ping Control node from Control interface" {
 
         }

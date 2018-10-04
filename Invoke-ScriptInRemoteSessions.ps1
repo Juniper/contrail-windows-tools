@@ -2,17 +2,22 @@ Param (
     [Parameter(Mandatory = $false)] [String] $ScriptFileName = "Clear-ComputeNode.ps1",
     [Parameter(Mandatory = $false)] [String] $Addresses = "127.0.0.1",
     [Parameter(Mandatory = $false)] [Switch] $IndividualCredentials,
+    [Parameter(Mandatory = $false)] [System.Management.Automation.PSCredential] $Credential,
     [Parameter(Mandatory = $false, ValueFromRemainingArguments = $true)] $ArgumentsToPass
 )
+
+if ($null -ne $Credential) {
+    $IndividualCredentials = $false
+}
 
 function New-Sessions {
     Param (
         [Parameter(Mandatory=$true)] [String[]] $Addresses,
         [Parameter(Mandatory=$false)] [Int] $RetryCount = 10,
-        [Parameter(Mandatory=$false)] [Int] $Timeout = 300000
+        [Parameter(Mandatory=$false)] [Int] $TimeoutMs = 5000
     )
 
-    if ($IndividualCredentials -eq $false) {
+    if ($IndividualCredentials -eq $false -and $null -eq $Credential) {
         $Credential = Get-Credential -Message "Enter common credentials for compute nodes"
     }
 
@@ -23,7 +28,7 @@ function New-Sessions {
             if ($IndividualCredentials -eq $true) {
                 $Credential = Get-Credential -Message "Enter credentials for $Address"
             }
-            $PSO = New-PSSessionOption -MaxConnectionRetryCount $RetryCount -OperationTimeout $Timeout -ErrorAction Stop
+            $PSO = New-PSSessionOption -MaxConnectionRetryCount $RetryCount -OperationTimeout $TimeoutMs -ErrorAction Stop
             $Session = New-PSSession -ComputerName $Address -Credential $Credential -SessionOption $PSO -ErrorAction Stop
             $Sessions += $Session
             Write-Host "Session created: $($Session.ComputerName)"

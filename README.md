@@ -58,15 +58,15 @@ Example invocation:
 
 All arguments are optional. Default values are demonstrated in the example above.
 
-Arguments `AdapterName`, `ForwardingExtensionName` and `VMSwitchName` refer to: name of physical interface controller by vRouter, name of forwarding extension and name of virtual switch created by vRouter.
+Arguments `AdapterName`, `ForwardingExtensionName` and `VMSwitchName` refer to: name of physical interface controlled by vRouter, name of forwarding extension and name of virtual switch used by vRouter.
 
 ## Invoke-ScriptInRemoteSessions.ps1
 
-This script runs a script (specified by `ScriptFileName`) on remote compute nodes described by comma separated list of addresses given in `Addresses` argument (e.g. `"10.0.19.5, 10.0.19.83"`).
+This script runs a script (specified by `ScriptFileName`) on remote compute nodes described by comma separated list of addresses given in `Addresses` argument (e.g. `"10.0.19.5,10.0.19.83"`).
 
 Example invocation:
 ```
-.\Clear-RemoteComputeNodes.ps1 `
+.\Invoke-ScriptInRemoteSessions.ps1 `
     -ScriptFileName "Clear-ComputeNode.ps1" `
     -Addresses "127.0.0.1" `
     -IndividualCredentials `

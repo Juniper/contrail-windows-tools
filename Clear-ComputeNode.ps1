@@ -6,7 +6,7 @@ Param (
     [Parameter(Mandatory = $false)] [String] $InstallationDir = "C:\Program Files\Juniper Networks"
 )
 
-function Invoke-ScriptBlockAndPrintErrors {
+function Invoke-ScriptBlockAndPrintExceptions {
     Param (
         [Parameter(Mandatory=$true, Position=0)] [ScriptBlock] $ScriptBlock
     )
@@ -29,10 +29,16 @@ function Stop-ProcessIfExists {
     }
 }
 
+function Remove-NetNatObjects {
+    Write-Host "Removing NetNat..."
+    Invoke-ScriptBlockAndPrintExceptions {
+        Get-NetNat | Remove-NetNat -Confirm:$false
+    }
+}
+
 function Remove-HNSNetworks {
     Write-Host "Cleaning HNS state..."
-    Invoke-ScriptBlockAndPrintErrors {
-        Get-NetNat | Remove-NetNat -Confirm:$false
+    Invoke-ScriptBlockAndPrintExceptions {
         # Two tries are intentional - it's workaround for HNS behavior.
         Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
         Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction Stop -Force
@@ -42,7 +48,7 @@ function Remove-HNSNetworks {
 function Remove-Service {
     Param ([Parameter(Mandatory = $true)] [String] $ServiceName)
 
-    Invoke-ScriptBlockAndPrintErrors {
+    Invoke-ScriptBlockAndPrintExceptions {
         $Service = Get-Service $ServiceName -ErrorAction SilentlyContinue
         if ($Service -ne $null) {
             Stop-Service $ServiceName -ErrorAction Stop
@@ -67,7 +73,7 @@ function Remove-AgentService {
 function Remove-DockerDriverService {
     Write-Host "Stopping Docker Driver and removing service..."
     Remove-Service -ServiceName "contrail-docker-driver"
-    Invoke-ScriptBlockAndPrintErrors {
+    Invoke-ScriptBlockAndPrintExceptions {
         # Docker Driver may run as a service. Or not.
         Stop-ProcessIfExists -ProcessName "contrail-windows-docker-driver"
     }
@@ -80,7 +86,7 @@ function Disable-VRouterExtension {
         [Parameter(Mandatory = $true)] [String] $VMSwitchName
     )
     Write-Host "Disabling Extension..."
-    Invoke-ScriptBlockAndPrintErrors {
+    Invoke-ScriptBlockAndPrintExceptions {
         Disable-VMSwitchExtension -VMSwitchName $VMSwitchName -Name $ForwardingExtensionName -ErrorAction Stop | Out-Null
         # Two tries are intentional - it's workaround for HNS behavior.
         Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $AdapterName | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
@@ -90,7 +96,7 @@ function Disable-VRouterExtension {
 
 function Remove-AllContainers {
     Write-Host "Removing all containers..."
-    Invoke-ScriptBlockAndPrintErrors {
+    Invoke-ScriptBlockAndPrintExceptions {
         $Containers = docker ps -aq
         $MaxAttempts = 3
         $TimesToGo = $MaxAttempts
@@ -150,7 +156,7 @@ function Remove-ConfigAndLogDir {
     Param ([Parameter(Mandatory = $true)] [String] $ConfigAndLogDir)
 
     Write-Host "Removing directory with configuration files and logs..."
-    Invoke-ScriptBlockAndPrintErrors {
+    Invoke-ScriptBlockAndPrintExceptions {
         Remove-Item $ConfigAndLogDir -Force -Recurse -ErrorAction Stop
     }
 }
@@ -159,7 +165,7 @@ function Remove-InstallationDirectory {
     Param ([Parameter(Mandatory = $true)] [String] $InstallationDir)
 
     Write-Host "Removing installation directory..."
-    Invoke-ScriptBlockAndPrintErrors {
+    Invoke-ScriptBlockAndPrintExceptions {
         Remove-Item $InstallationDir -Force -Recurse -ErrorAction Stop
     }
 }
@@ -190,6 +196,7 @@ function Clear-ComputeNode {
     Remove-ConfigAndLogDir -ConfigAndLogDir $ConfigAndLogDir
     Remove-InstallationDirectory -InstallationDir $InstallationDir
     Stop-Service docker
+    Remove-NetNatObjects
     Remove-HNSNetworks
     Start-Service docker
 }

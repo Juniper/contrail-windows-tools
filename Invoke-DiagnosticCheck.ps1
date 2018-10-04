@@ -157,6 +157,10 @@ Describe "Diagnostic check" {
             }
             $true | Should Be $true
         }
+
+        It "npcap should not be installed" {
+            Get-Service npcap | Should Throw
+        }
     }
 
     Context "vRouter certificate" {

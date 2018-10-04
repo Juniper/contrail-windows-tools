@@ -1,12 +1,8 @@
 Param (
-    [Parameter(Mandatory=$false)] [String] $ScriptFileName = "Clear-ComputeNode.ps1",
-    [Parameter(Mandatory=$false)] [String] $Addresses = "127.0.0.1",
-    [Parameter(Mandatory=$false)] [Switch] $IndividualCredentials,
-    [Parameter(Mandatory = $false)] [String] $AdapterName = "Ethernet1",
-    [Parameter(Mandatory = $false)] [String] $ForwardingExtensionName = "vRouter forwarding extension",
-    [Parameter(Mandatory = $false)] [String] $VMSwitchName = "Layered Ethernet1",
-    [Parameter(Mandatory = $false)] [String] $ConfigAndLogDir = "C:\ProgramData\Contrail",
-    [Parameter(Mandatory = $false)] [String] $InstallationDir = "C:\Program Files\Juniper Networks"
+    [Parameter(Mandatory = $false)] [String] $ScriptFileName = "Clear-ComputeNode.ps1",
+    [Parameter(Mandatory = $false)] [String] $Addresses = "127.0.0.1",
+    [Parameter(Mandatory = $false)] [Switch] $IndividualCredentials,
+    [Parameter(Mandatory = $false, ValueFromRemainingArguments = $true)] $ArgumentsToPass
 )
 
 function New-Sessions {
@@ -48,7 +44,7 @@ function Close-Sessions {
     }
 }
 
-function Run-ScriptInSessions {
+function Invoke-ScriptInSessions {
     Param (
         [Parameter(Mandatory=$true)] [String] $ScriptFileName,
         [Parameter(Mandatory=$true)] [System.Management.Automation.Runspaces.PSSession[]] $Sessions
@@ -59,14 +55,30 @@ function Run-ScriptInSessions {
             Write-Host "Copying script to remote session: $($Session.ComputerName) ..."
             Copy-Item -ToSession $Session -Path $ScriptFileName -Destination "C:\$ScriptFileName" -ErrorAction Stop
             Write-Host "Running script '$ScriptFileName' in remote session: $($Session.ComputerName) ..."
-            $Response = Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
+            Invoke-Command -Session $Session -ErrorAction Stop -ScriptBlock {
+                function Invoke-ScriptWithParameters {
+                    Param (
+                        [Parameter(Mandatory = $true)] $ScriptFileName,
+                        [Parameter(Mandatory = $true)] [AllowNull()] $Parameters
+                    )
+                    
+                    $ParametersString = ""
+                    foreach($Parameter in $Parameters) {
+                        if (-not $Parameter.Contains(" ")) {
+                            $ParametersString += "$Parameter "
+                        } else {
+                            $ParametersString += "'$Parameter' "
+                        }
+                    }
+                    $Expression = "./$ScriptFileName $ParametersString"
+                    Write-Host $Expression
+                    Invoke-Expression $Expression
+                }
+
                 Set-Location C:\
-                &./$Using:ScriptFileName `
-                    -AdapterName $Using:AdapterName `
-                    -ForwardingExtensionName $Using:ForwardingExtensionName `
-                    -VMSwitchName $Using:VMSwitchName `
-                    -ConfigAndLogDir $Using:ConfigAndLogDir `
-                    -InstallationDir $Using:InstallationDir
+                Invoke-ScriptWithParameters `
+                    -ScriptFileName $Using:ScriptFileName `
+                    -Parameters $Using:ArgumentsToPass
             }
         } catch {
             Write-Host "ERROR: $($_.Exception.Message)"
@@ -75,5 +87,5 @@ function Run-ScriptInSessions {
 }
 
 $Sessions = New-Sessions -Addresses $Addresses.Split(",")
-Run-ScriptInSessions -ScriptFileName $ScriptFileName -Sessions $Sessions
+Invoke-ScriptInSessions -ScriptFileName $ScriptFileName -Sessions $Sessions
 Close-Sessions -Sessions $Sessions

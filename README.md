@@ -60,9 +60,9 @@ All arguments are optional. Default values are demonstrated in the example above
 
 Arguments `AdapterName`, `ForwardingExtensionName` and `VMSwitchName` refer to: name of physical interface controller by vRouter, name of forwarding extension and name of virtual switch created by vRouter.
 
-## Clear-RemoteComputeNodes.ps1
+## Invoke-ScriptInRemoteSessions.ps1
 
-This script runs clean up script on remote compute nodes described by comma separated list of addresses given in `Addresses` argument (e.g. `"10.0.19.5, 10.0.19.83"`)
+This script runs a script (specified by `ScriptFileName`) on remote compute nodes described by comma separated list of addresses given in `Addresses` argument (e.g. `"10.0.19.5, 10.0.19.83"`).
 
 Example invocation:
 ```
@@ -70,15 +70,12 @@ Example invocation:
     -ScriptFileName "Clear-ComputeNode.ps1" `
     -Addresses "127.0.0.1" `
     -IndividualCredentials `
-    -AdapterName "Ethernet1" `
-    -ForwardingExtensionName "vRouter forwarding extension" `
-    -VMSwitchName "Layered Ethernet1" `
-    -ConfigAndLogDir "C:\ProgramData\Contrail" `
-    -InstallationDir "C:\Program Files\Juniper Networks"
+    -SomeExampleArgumentToPass1 "Value1" `
+    -SomeExampleArgumentToPass2 "Value2"
 ```
 
-All arguments are optional. Default values are demonstrated in the example above.
-
-Arguments AdapterName, ForwardingExtensionName, VMSwitchName, ConfigAndLogDir, InstallationDir are forwarded to the script pointed by ScriptFileName.
+All arguments are optional. Default values (for `ScriptFileName` and `Addresses`) are demonstrated in the example above.
 
 If `IndividualCredentials` switch is enabled, the script is going to ask for credentials for each given address independently. By default it is assumed, that all remote compute nodes share the same credentials.
+
+All other arguments (`SomeExampleArgumentToPass1` and `SomeExampleArgumentToPass2` in above example) are passed to the invoked script.

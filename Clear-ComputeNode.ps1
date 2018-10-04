@@ -6,8 +6,22 @@ Param (
     [Parameter(Mandatory = $false)] [String] $InstallationDir = "C:\Program Files\Juniper Networks"
 )
 
+function Invoke-ScriptBlockAndPrintErrors {
+    Param (
+        [Parameter(Mandatory=$true, Position=0)] [ScriptBlock] $ScriptBlock
+    )
+
+    try {
+        Invoke-Command $ScriptBlock
+    } catch {
+        $ErrorMessage += $_.Exception.Message
+        Write-Host "    This step failed with the following error message: $ErrorMessage"
+        Write-Host "    Trying to continue, but final result is unpredictable."
+    }
+}
+
 function Stop-ProcessIfExists {
-    Param ([Parameter(Mandatory = $true)] [string] $ProcessName)
+    Param ([Parameter(Mandatory = $true)] [String] $ProcessName)
 
     $Proc = Get-Process $ProcessName -ErrorAction SilentlyContinue
     if ($Proc) {
@@ -17,74 +31,45 @@ function Stop-ProcessIfExists {
 
 function Remove-HNSNetworks {
     Write-Host "Cleaning HNS state..."
-    try {
+    Invoke-ScriptBlockAndPrintErrors {
         Get-NetNat | Remove-NetNat -Confirm:$false
         # Two tries are intentional - it's workaround for HNS behavior.
         Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
         Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction Stop -Force
-    } catch {
-        $ErrorMessage += $_.Exception.Message
-        Write-Host "    This step failed with the following error message: $ErrorMessage"
-        Write-Host "    Trying to continue, but final result is unpredictable."
+    }
+}
+
+function Remove-Service {
+    Param ([Parameter(Mandatory = $true)] [String] $ServiceName)
+
+    Invoke-ScriptBlockAndPrintErrors {
+        $Service = Get-Service $ServiceName -ErrorAction SilentlyContinue
+        if ($Service -ne $null) {
+            Stop-Service $ServiceName -ErrorAction Stop
+            sc.exe delete $ServiceName
+            if ($LASTEXITCODE -ne 0) {
+                throw "sc.exe failed to delete service."
+            }
+        }
     }
 }
 
 function Remove-NodeMgrService {
     Write-Host "Stopping Node Manager and removing service..."
-    try {
-        $NodeMgrServiceName = "contrail-vrouter-nodemgr"
-        $Service = Get-Service $NodeMgrServiceName -ErrorAction SilentlyContinue
-        if ($Service -ne $null) {
-            Stop-Service $NodeMgrServiceName -ErrorAction Stop
-            sc.exe delete $NodeMgrServiceName
-            if ($LASTEXITCODE -ne 0) {
-                throw "sc.exe failed to delete service."
-            }
-        }
-    } catch {
-        $ErrorMessage += $_.Exception.Message
-        Write-Host "    This step failed with the following error message: $ErrorMessage"
-        Write-Host "    Trying to continue, but final result is unpredictable."
-    }
+    Remove-Service -ServiceName "contrail-vrouter-nodemgr"
 }
 
 function Remove-AgentService {
     Write-Host "Stopping Agent and removing service..."
-    try {
-        $AgentServiceName = "ContrailAgent"
-        $Service = Get-Service $AgentServiceName -ErrorAction SilentlyContinue
-        if ($Service -ne $null) {
-            Stop-Service $AgentServiceName -ErrorAction Stop
-            sc.exe delete $AgentServiceName
-            if ($LASTEXITCODE -ne 0) {
-                throw "sc.exe failed to delete service."
-            }
-        }
-    } catch {
-        $ErrorMessage += $_.Exception.Message
-        Write-Host "    This step failed with the following error message: $ErrorMessage"
-        Write-Host "    Trying to continue, but final result is unpredictable."
-    }
+    Remove-Service -ServiceName "ContrailAgent"
 }
 
 function Remove-DockerDriverService {
     Write-Host "Stopping Docker Driver and removing service..."
-    try {
-        $DockerDriverServiceName = "contrail-docker-driver"
-        $Service = Get-Service $DockerDriverServiceName -ErrorAction SilentlyContinue
-        if ($Service -ne $null) {
-            Stop-Service $DockerDriverServiceName -ErrorAction Stop
-            sc.exe delete $DockerDriverServiceName
-            if ($LASTEXITCODE -ne 0) {
-                throw "sc.exe failed to delete service."
-            }
-        }
+    Remove-Service -ServiceName "contrail-docker-driver"
+    Invoke-ScriptBlockAndPrintErrors {
         # Docker Driver may run as a service. Or not.
         Stop-ProcessIfExists -ProcessName "contrail-windows-docker-driver"
-    } catch {
-        $ErrorMessage += $_.Exception.Message
-        Write-Host "    This step failed with the following error message: $ErrorMessage"
-        Write-Host "    Trying to continue, but final result is unpredictable."
     }
 }
 
@@ -95,21 +80,17 @@ function Disable-VRouterExtension {
         [Parameter(Mandatory = $true)] [String] $VMSwitchName
     )
     Write-Host "Disabling Extension..."
-    try {
+    Invoke-ScriptBlockAndPrintErrors {
         Disable-VMSwitchExtension -VMSwitchName $VMSwitchName -Name $ForwardingExtensionName -ErrorAction Stop | Out-Null
         # Two tries are intentional - it's workaround for HNS behavior.
         Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $AdapterName | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
         Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $AdapterName | Remove-ContainerNetwork -ErrorAction Stop -Force
-    } catch {
-        $ErrorMessage += $_.Exception.Message
-        Write-Host "    This step failed with the following error message: $ErrorMessage"
-        Write-Host "    Trying to continue, but final result is unpredictable."
     }
 }
 
 function Remove-AllContainers {
     Write-Host "Removing all containers..."
-    try {
+    Invoke-ScriptBlockAndPrintErrors {
         $Containers = docker ps -aq
         $MaxAttempts = 3
         $TimesToGo = $MaxAttempts
@@ -126,10 +107,6 @@ function Remove-AllContainers {
                 $TimesToGo = $TimesToGo - 1
             }
         }
-    } catch {
-        $ErrorMessage += $_.Exception.Message
-        Write-Host "    This step failed with the following error message: $ErrorMessage"
-        Write-Host "    Trying to continue, but final result is unpredictable."
     }
 }
 
@@ -173,12 +150,8 @@ function Remove-ConfigAndLogDir {
     Param ([Parameter(Mandatory = $true)] [String] $ConfigAndLogDir)
 
     Write-Host "Removing directory with configuration files and logs..."
-    try {
+    Invoke-ScriptBlockAndPrintErrors {
         Remove-Item $ConfigAndLogDir -Force -Recurse -ErrorAction Stop
-    } catch {
-        $ErrorMessage += $_.Exception.Message
-        Write-Host "    This step failed with the following error message: $ErrorMessage"
-        Write-Host "    Trying to continue, but final result is unpredictable."
     }
 }
 
@@ -186,12 +159,8 @@ function Remove-InstallationDirectory {
     Param ([Parameter(Mandatory = $true)] [String] $InstallationDir)
 
     Write-Host "Removing installation directory..."
-    try {
+    Invoke-ScriptBlockAndPrintErrors {
         Remove-Item $InstallationDir -Force -Recurse -ErrorAction Stop
-    } catch {
-        $ErrorMessage += $_.Exception.Message
-        Write-Host "    This step failed with the following error message: $ErrorMessage"
-        Write-Host "    Trying to continue, but final result is unpredictable."
     }
 }
 

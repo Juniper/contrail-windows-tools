@@ -159,6 +159,10 @@ Describe "Diagnostic check" {
         }
 
         It "npcap should not be installed" {
+            # npcap (and its kernel drivers) interfere with the way Windows TCP/IP stack
+            # works. For example, it disables checksum offloading on container interfaces.
+            # To provide a consistent behaviour on test and dev environments, npcap
+            # should be uninstalled.
             { Get-Service npcap } | Should Throw
         }
     }

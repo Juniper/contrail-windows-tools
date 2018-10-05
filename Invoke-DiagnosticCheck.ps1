@@ -22,6 +22,35 @@ function Assert-RunningAsAdmin {
     }
 }
 
+function Assert-AreDLLsPresent {
+    Param (
+        [Parameter(Mandatory=$true)] $ExitCode
+    )
+    #https://msdn.microsoft.com/en-us/library/cc704588.aspx
+    #Value below is taken from the link above and it indicates
+    #that application failed to load some DLL.
+    $MissingDLLsErrorReturnCode = [int64]0xC0000135
+    $System32Dir = "C:/Windows/System32"
+
+    if ([int64]$ExitCode -eq $MissingDLLsErrorReturnCode) {
+        $VisualDLLs = @("msvcp140d.dll", "ucrtbased.dll", "vcruntime140d.dll")
+        $MissingVisualDLLs = @()
+
+        foreach($DLL in $VisualDLLs) {
+            if (-not (Test-Path $(Join-Path $System32Dir $DLL))) {
+                $MissingVisualDLLs += $DLL
+            }
+        }
+
+        if ($MissingVisualDLLs.count -ne 0) {
+            throw "$MissingVisualDLLs must be present in $System32Dir"
+        }
+        else {
+            throw "Some other not known DLL(s) couldn't be loaded"
+        }
+    }
+}
+
 Describe "Diagnostic check" {
     Context "vRouter forwarding extension" {
         It "is running" {
@@ -135,6 +164,23 @@ Describe "Diagnostic check" {
         It "VMSwitch exists" {
             Assert-RunningAsAdmin
             Get-VMSwitch "Layered?$AdapterName" | Should Not BeNullOrEmpty
+        }
+
+        It "Visual DLLs are present in C:/Windows/System32 directory" {
+            $AGENT_EXECUTABLE_PATH = "C:/Program Files/Juniper Networks/agent/contrail-vrouter-agent.exe"
+
+            $Invocations = @(
+                "vif.exe",
+                "rt.exe",
+                "flow.exe",
+                "nh.exe",
+                $AGENT_EXECUTABLE_PATH
+            )
+
+            foreach ($Invocation in $Invocations) {
+                & $Invocation --version 2>&1 | Out-Null
+                { Assert-AreDLLsPresent -ExitCode $LastExitCode } | Should Not Throw
+            }
         }
 
         It "can ping Control node from Control interface" {

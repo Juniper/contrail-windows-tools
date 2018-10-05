@@ -159,7 +159,7 @@ Describe "Diagnostic check" {
         }
 
         It "npcap should not be installed" {
-            Get-Service npcap | Should Throw
+            { Get-Service npcap } | Should Throw
         }
     }
 

@@ -65,14 +65,34 @@ function Remove-NodeMgrService {
     Remove-Service -ServiceName "contrail-vrouter-nodemgr"
 }
 
+function Get-ProperAgentName {
+    $Service = Get-Service "contrail-vrouter-agent" -ErrorAction SilentlyContinue
+    if ($Service) {
+        return "contrail-vrouter-agent"
+    } else {
+        return "ContrailAgent"
+    }
+}
+
 function Remove-AgentService {
-    Write-Host "Stopping Agent and removing service..."
-    Remove-Service -ServiceName "ContrailAgent"
+    $ServiceName = Get-ProperAgentName
+    Write-Host "Stopping $ServiceName and removing service..."
+    Remove-Service -ServiceName $ServiceName
+}
+
+function Get-ProperCNMPluginName {
+    $Service = Get-Service "contrail-cnm-plugin" -ErrorAction SilentlyContinue
+    if ($Service) {
+        return "contrail-cnm-plugin"
+    } else {
+        return "contrail-docker-driver"
+    }
 }
 
 function Remove-DockerDriverService {
-    Write-Host "Stopping Docker Driver and removing service..."
-    Remove-Service -ServiceName "contrail-docker-driver"
+    $ServiceName = Get-ProperCNMPluginName
+    Write-Host "Stopping $ServiceName and removing service..."
+    Remove-Service -ServiceName $ServiceName
     Invoke-ScriptBlockAndPrintExceptions {
         # Docker Driver may run as a service. Or not.
         Stop-ProcessIfExists -ProcessName "contrail-windows-docker-driver"

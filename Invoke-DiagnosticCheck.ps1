@@ -151,7 +151,7 @@ Describe "Diagnostic check" {
 
     Context "CNM plugin" {
         It "is running" {
-            Get-Service Get-ProperCNMPluginName | Select-Object -ExpandProperty Status `
+            Get-Service (Get-ProperCNMPluginName) | Select-Object -ExpandProperty Status `
                 | Should Be "Running"
         }
 

@@ -12,6 +12,23 @@ Param (
 
 $VMSwitchName = "Layered?$AdapterName"
 
+function Get-ProperAgentName {
+    $Service = Get-Service "contrail-vrouter-agent" -ErrorAction SilentlyContinue
+    if ($Service) {
+        return "contrail-vrouter-agent"
+    } else {
+        return "ContrailAgent"
+    }
+}
+
+function Get-ProperCNMPluginName {
+    $Service = Get-Service "contrail-cnm-plugin" -ErrorAction SilentlyContinue
+    if ($Service) {
+        return "contrail-cnm-plugin"
+    } else {
+        return "contrail-docker-driver"
+    }
+}
 function Assert-RunningAsAdmin {
     $Principal = New-Object Security.Principal.WindowsPrincipal(
         [Security.Principal.WindowsIdentity]::GetCurrent())
@@ -101,11 +118,11 @@ Describe "Diagnostic check" {
 
     Context "vRouter Agent" {
         It "is present" {
-            Get-Service "ContrailAgent" | Should Not BeNullOrEmpty
+            Get-Service (Get-ProperAgentName) | Should Not BeNullOrEmpty
         }
 
         It "is running" {
-            Get-Service "ContrailAgent" | Select-Object -ExpandProperty Status `
+            Get-Service (Get-ProperAgentName) | Select-Object -ExpandProperty Status `
                 | Should Be "Running"
         }
 
@@ -134,7 +151,7 @@ Describe "Diagnostic check" {
 
     Context "CNM plugin" {
         It "is running" {
-            Get-Service "contrail-docker-driver" | Select-Object -ExpandProperty Status `
+            Get-Service Get-ProperCNMPluginName | Select-Object -ExpandProperty Status `
                 | Should Be "Running"
         }
 

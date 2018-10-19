@@ -39,6 +39,13 @@ function Assert-RunningAsAdmin {
     }
 }
 
+function Assert-ServicePresentAndRunning([string]$Name) {
+    { Get-Service $Name -ErrorAction Stop } | Should Not Throw
+    # We need to Get-Service again due to script block boundary
+    Get-Service $Name | Select-Object -ExpandProperty Status `
+        | Should Be "Running"
+}
+
 function Assert-AreDLLsPresent {
     Param (
         [Parameter(Mandatory=$true)] $ExitCode
@@ -117,13 +124,8 @@ Describe "Diagnostic check" {
     }
 
     Context "vRouter Agent" {
-        It "is present" {
-            Get-Service (Get-ProperAgentName) | Should Not BeNullOrEmpty
-        }
-
         It "is running" {
-            Get-Service (Get-ProperAgentName) | Select-Object -ExpandProperty Status `
-                | Should Be "Running"
+            Assert-ServicePresentAndRunning -Name (Get-ProperAgentName)
         }
 
         It "serves an Agent API on TCP socket" {
@@ -139,20 +141,14 @@ Describe "Diagnostic check" {
     }
 
     Context "Node manager" {
-        It "is present" {
-            Get-Service "contrail-vrouter-nodemgr" | Should Not BeNullOrEmpty
-        }
-
         It "is running" {
-            Get-Service "contrail-vrouter-nodemgr" | Select-Object -ExpandProperty Status `
-                | Should Be "Running"
+            Assert-ServicePresentAndRunning -Name "contrail-vrouter-nodemgr"
         }
     }
 
     Context "CNM plugin" {
         It "is running" {
-            Get-Service (Get-ProperCNMPluginName) | Select-Object -ExpandProperty Status `
-                | Should Be "Running"
+            Assert-ServicePresentAndRunning -Name (Get-ProperCNMPluginName)
         }
 
         It "creates a named pipe API server" {
@@ -172,6 +168,7 @@ Describe "Diagnostic check" {
         }
 
         It "has created a root Contrail HNS network in Docker" {
+            Assert-RunningAsAdmin
             Get-ContainerNetwork | Where-Object Name -EQ "ContrailRootNetwork" `
                 | Should Not BeNullOrEmpty
         }
@@ -226,7 +223,9 @@ Describe "Diagnostic check" {
             # works. For example, it disables checksum offloading on container interfaces.
             # To provide a consistent behaviour on test and dev environments, npcap
             # should be uninstalled.
-            { Get-Service npcap } | Should Throw
+            {
+                Get-Service npcap -ErrorAction Stop
+            } | Should Throw
         }
     }
 
@@ -280,8 +279,7 @@ Describe "Diagnostic check" {
 
     Context "Docker" {
         It "is running" {
-            Get-Service "Docker" | Select-Object -ExpandProperty "Status" `
-                | Should Be "Running"
+            Assert-ServicePresentAndRunning -Name "Docker"
         }
 
         It "there are no Contrail networks in Docker with incorrect driver" {

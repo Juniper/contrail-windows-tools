@@ -226,7 +226,9 @@ Describe "Diagnostic check" {
             # works. For example, it disables checksum offloading on container interfaces.
             # To provide a consistent behaviour on test and dev environments, npcap
             # should be uninstalled.
-            { Get-Service npcap } | Should Throw
+            {
+                Get-Service npcap -ErrorAction Stop
+            } | Should Throw
         }
     }
 

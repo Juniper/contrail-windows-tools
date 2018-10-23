@@ -29,6 +29,7 @@ function Get-ProperCNMPluginName {
         return "contrail-docker-driver"
     }
 }
+
 function Assert-RunningAsAdmin {
     $Principal = New-Object Security.Principal.WindowsPrincipal(
         [Security.Principal.WindowsIdentity]::GetCurrent())
@@ -226,6 +227,16 @@ Describe "Diagnostic check" {
             {
                 Get-Service npcap -ErrorAction Stop
             } | Should Throw
+        }
+    }
+
+    Context "kernel panic" {
+        It "there is no recent memory dump" {
+            { Get-ChildItem $Env:SystemRoot/MEMORY.DMP -ErrorAction Stop } | Should Throw
+        }
+
+        It "there is no recent minidump file" {
+            Get-ChildItem $Env:SystemRoot\Minidump\*.dmp | Should BeNullOrEmpty
         }
     }
 

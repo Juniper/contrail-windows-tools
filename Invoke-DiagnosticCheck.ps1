@@ -236,7 +236,7 @@ Describe "Diagnostic check" {
         }
 
         It "there is no recent minidump file" {
-            Get-ChildItem C:\Windows\Minidump\*.dmp | Should BeNullOrEmpty
+            Get-ChildItem $Env:SystemRoot\Minidump\*.dmp | Should BeNullOrEmpty
         }
     }
 

@@ -32,7 +32,7 @@ This script runs on localhost and performs a series of checks to verify that Win
 is running correctly. It doesn't introduce any changes, so should be safe to run.
 
 **Note**: the script can be ran with or without Administrator privileges. However, some checks
-will not be performed without them.	
+will not be performed without them.
 
 ```
 .\Invoke-DiagnosticCheck.ps1 -AdapterName "Ethernet0"
@@ -104,3 +104,7 @@ All arguments are optional. Default values (for `ScriptFileName` and `Addresses`
 If `IndividualCredentials` switch is enabled, the script is going to ask for credentials for each given address independently. By default it is assumed, that all remote compute nodes share the same credentials.
 
 All other arguments (`SomeExampleArgumentToPass1` and `SomeExampleArgumentToPass2` in above example) are passed to the invoked script.
+
+## Testing network performance
+
+Read more [here](PerformanceTesting/README.md).

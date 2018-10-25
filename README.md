@@ -4,7 +4,29 @@ This repository contains utility scripts used for managing Contrail Windows comp
 
 Hopefully, they should help in operations as well as development.
 
-## Invoke-DiagnosticCheck.ps1
+## Quick start
+
+### Download without git
+
+```
+Invoke-WebRequest  https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Invoke-ScriptInRemoteSessions.ps1 -OutFile Invoke-ScriptInRemoteSessions.ps1
+Invoke-WebRequest  https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Invoke-DiagnosticCheck.ps1 -OutFile Invoke-DiagnosticCheck.ps1
+Invoke-WebRequest  https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Clear-ComputeNode.ps1 -OutFile Clear-ComputeNode.ps1
+```
+
+### Run diagnostic check on multiple Windows nodes
+
+```
+.\Invoke-ScriptInRemoteSessions.ps1 -ScriptFileName ".\Invoke-DiagnosticCheck.ps1" -Addresses "<IP1>,<IP2>" -Credential (Get-Credential)
+```
+
+### Clear multiple Windows nodes
+
+```
+.\Invoke-ScriptInRemoteSessions.ps1 -ScriptFileName ".\Clear-ComputeNode.ps1" -Addresses "<IP1>,<IP2>" -Credential (Get-Credential)
+```
+
+### Invoke-DiagnosticCheck.ps1
 
 This script runs on localhost and performs a series of checks to verify that Windows compute node
 is running correctly. It doesn't introduce any changes, so should be safe to run.

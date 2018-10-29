@@ -20,3 +20,6 @@ venv
 
 ### Ansible ###
 *.retry
+
+### Any NTttcp stuff (zips, dirs, exes) ###
+NTttcp*

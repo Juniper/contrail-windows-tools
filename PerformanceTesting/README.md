@@ -5,7 +5,7 @@
 1. Prepare 2 containers according to selected scenario. Refer to performance test
 [documentation](https://juniper.github.io/contrail-windows-docs/For%20developers/Developer%20guide/Performance/Testing/).
 
-2. Download NTttcp and place the binary in this directory.
+2. Download NTttcp and place the binary in the same directory as the test runner script:
 
 ```
 Invoke-WebRequest https://gallery.technet.microsoft.com/NTttcp-Version-528-Now-f8b12769/file/159655/1/NTttcp-v5.33.zip -OutFile NTttcp-v5.33.zip
@@ -14,7 +14,7 @@ Expand-Archive .\NTttcp-v5.33.zip -OutputPath NTttcp
 Copy-Item NTttcp\amd64fre\NTttcp.exe .
 ```
 
-2. Run `Test-TCPPerformance.ps1` script, where:
+2. Run `Test-TCPPerformance.ps1` script:
 
 ```
 .\Test-TCPPerformance.ps1 `

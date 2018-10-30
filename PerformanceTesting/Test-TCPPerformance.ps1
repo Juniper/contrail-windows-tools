@@ -1,8 +1,8 @@
 Param (
-    [Parameter(Mandatory = $true)] [string] $ServerComputeNodeIP,
-    [Parameter(Mandatory = $true)] [string] $ServerContainerName,
-    [Parameter(Mandatory = $true)] [string] $ClientComputeNodeIP,
-    [Parameter(Mandatory = $true)] [string] $ClientContainerName,
+    [Parameter(Mandatory = $true)] [string] $ReceiverComputeNodeIP,
+    [Parameter(Mandatory = $true)] [string] $ReceiverContainerName,
+    [Parameter(Mandatory = $true)] [string] $SenderComputeNodeIP,
+    [Parameter(Mandatory = $true)] [string] $SenderContainerName,
     [Parameter(Mandatory = $false)] [int] $TestsCount = 10,
     [Parameter(Mandatory = $false)] [pscredential] $Credentials = $(Get-Credential)
 )
@@ -30,10 +30,13 @@ function Copy-NTttcp {
 
     Copy-Item -ToSession $Session -Path "$PSScriptRoot\$NTttcpBinaryName" -Destination "$WorkingDirectory\$NTttcpBinaryName"
 
+    Write-Host "Creating working directory in container $ContainerName"
     Invoke-Command -Session $Session -ScriptBlock {
         docker exec ${Using:ContainerName} powershell `
             "New-Item -ItemType Directory -Path ${Using:WorkingDirectory} -Force | Out-Null"
-
+    }
+    Write-Host "Copying $NTttcpBinaryName to container $ContainerName"
+    Invoke-Command -Session $Session -ScriptBlock {
         docker cp "${Using:WorkingDirectory}\${Using:NTttcpBinaryName}" `
             "${Using:ContainerName}:${Using:WorkingDirectory}\${Using:NTttcpBinaryName}"
     }
@@ -45,6 +48,7 @@ function Get-ContainerIP {
         [Parameter(Mandatory = $true)] [string] $ContainerName
     )
 
+    Write-Host "Getting container $ContainerName IP address"
     return Invoke-Command -Session $Session -ScriptBlock {
         docker exec ${Using:ContainerName} powershell `
             "(Get-NetAdapter | Get-NetIPAddress -AddressFamily IPv4).IPAddress"
@@ -53,26 +57,28 @@ function Get-ContainerIP {
 
 function Invoke-PerformanceTest {
     Param (
-        [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $ServerSession,
-        [Parameter(Mandatory = $true)] [string] $ServerContainerName,
-        [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $ClientSession,
-        [Parameter(Mandatory = $true)] [string] $ClientContainerName,
-        [Parameter(Mandatory = $true)] [string] $ServerContainerIP
+        [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $ReceiverSession,
+        [Parameter(Mandatory = $true)] [string] $ReceiverContainerName,
+        [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $SenderSession,
+        [Parameter(Mandatory = $true)] [string] $SenderContainerName,
+        [Parameter(Mandatory = $true)] [string] $ReceiverContainerIP
     )
 
-    Invoke-Command -Session $ServerSession -ScriptBlock {
-        docker exec --detach ${Using:ServerContainerName} powershell `
-            "${Using:WorkingDirectory}\${Using:NTttcpBinaryName} -r -m 1,*,${Using:ServerContainerIP} -rb 2M -t 15"
+    Write-Host "starting NTttcp listener session in $ReceiverContainerName"
+    Invoke-Command -Session $ReceiverSession -ScriptBlock {
+        docker exec --detach ${Using:ReceiverContainerName} powershell `
+            "${Using:WorkingDirectory}\${Using:NTttcpBinaryName} -r -m 1,*,${Using:ReceiverContainerIP} -rb 2M -t 15"
     }
 
-    $XMLText = Invoke-Command -Session $ClientSession -ScriptBlock {
-        docker exec ${Using:ClientContainerName} powershell `
-            "${Using:WorkingDirectory}\${Using:NTttcpBinaryName} -s -m 1,*,${Using:ServerContainerIP} -l 128k -t 15 -xml ${Using:WorkingDirectory}\${Using:ResultFileName} | Out-Null"
+    Write-Host "starting NTttcp sender session in $SenderContainerName"
+    $XMLText = Invoke-Command -Session $SenderSession -ScriptBlock {
+        docker exec ${Using:SenderContainerName} powershell `
+            "${Using:WorkingDirectory}\${Using:NTttcpBinaryName} -s -m 1,*,${Using:ReceiverContainerIP} -l 128k -t 15 -xml ${Using:WorkingDirectory}\${Using:ResultFileName} | Out-Null"
 
-        $XMLText = docker exec ${Using:ClientContainerName} powershell `
+        $XMLText = docker exec ${Using:SenderContainerName} powershell `
             "Get-Content ${Using:WorkingDirectory}\${Using:ResultFileName}"
 
-        docker exec ${Using:ClientContainerName} powershell `
+        docker exec ${Using:SenderContainerName} powershell `
             "Remove-Item ${Using:WorkingDirectory}\${Using:ResultFileName}"
 
         return $XMLText
@@ -83,11 +89,11 @@ function Invoke-PerformanceTest {
 
 function Invoke-PerformanceTests {
     Param (
-        [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $ServerSession,
-        [Parameter(Mandatory = $true)] [string] $ServerContainerName,
-        [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $ClientSession,
-        [Parameter(Mandatory = $true)] [string] $ClientContainerName,
-        [Parameter(Mandatory = $true)] [string] $ServerContainerIP,
+        [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $ReceiverSession,
+        [Parameter(Mandatory = $true)] [string] $ReceiverContainerName,
+        [Parameter(Mandatory = $true)] [System.Management.Automation.Runspaces.PSSession] $SenderSession,
+        [Parameter(Mandatory = $true)] [string] $SenderContainerName,
+        [Parameter(Mandatory = $true)] [string] $ReceiverContainerIP,
         [Parameter(Mandatory = $true)] [int] $TestsCount
     )
 
@@ -97,11 +103,11 @@ function Invoke-PerformanceTests {
         Write-Host "Running test #$_..."
 
         $Result = Invoke-PerformanceTest `
-            -ServerSession $ServerSession `
-            -ServerContainerName $ServerContainerName `
-            -ClientSession $ClientSession `
-            -ClientContainerName $ClientContainerName `
-            -ServerContainerIP $ServerContainerIp
+            -ReceiverSession $ReceiverSession `
+            -ReceiverContainerName $ReceiverContainerName `
+            -SenderSession $SenderSession `
+            -SenderContainerName $SenderContainerName `
+            -ReceiverContainerIP $ReceiverContainerIP
 
         $Results.Add($Result) | Out-Null
     }
@@ -162,20 +168,20 @@ function Format-Results {
 Test-Dependencies
 
 Write-Host "Preparing environment..."
-$ServerSession = New-PSSession -ComputerName $ServerComputeNodeIP -Credential $Credentials
-$ClientSession = New-PSSession -ComputerName $ClientComputeNodeIP -Credential $Credentials
+$ReceiverSession = New-PSSession -ComputerName $ReceiverComputeNodeIP -Credential $Credentials
+$SenderSession = New-PSSession -ComputerName $SenderComputeNodeIP -Credential $Credentials
 
-Copy-NTttcp -Session $ServerSession -ContainerName $ServerContainerName
-Copy-NTttcp -Session $ClientSession -ContainerName $ClientContainerName
+Copy-NTttcp -Session $ReceiverSession -ContainerName $ReceiverContainerName
+Copy-NTttcp -Session $SenderSession -ContainerName $SenderContainerName
 
-$ServerContainerIp = Get-ContainerIP -Session $ServerSession -ContainerName $ServerContainerName
+$ReceiverContainerIP = Get-ContainerIP -Session $ReceiverSession -ContainerName $ReceiverContainerName
 
 $Results = Invoke-PerformanceTests `
-    -ServerSession $ServerSession `
-    -ServerContainerName $ServerContainerName `
-    -ClientSession $ClientSession `
-    -ClientContainerName $ClientContainerName `
-    -ServerContainerIP $ServerContainerIp `
+    -ReceiverSession $ReceiverSession `
+    -ReceiverContainerName $ReceiverContainerName `
+    -SenderSession $SenderSession `
+    -SenderContainerName $SenderContainerName `
+    -ReceiverContainerIP $ReceiverContainerIP `
     -TestsCount $TestsCount
 
 Format-Results -TestsResults $Results

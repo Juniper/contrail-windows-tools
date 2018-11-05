@@ -3,7 +3,8 @@ Param (
     [Parameter(Mandatory = $false)] [String] $ForwardingExtensionName = "vRouter forwarding extension",
     [Parameter(Mandatory = $false)] [String] $VMSwitchName = "Layered Ethernet1",
     [Parameter(Mandatory = $false)] [String] $ConfigAndLogDir = "C:\ProgramData\Contrail",
-    [Parameter(Mandatory = $false)] [String] $InstallationDir = "C:\Program Files\Juniper Networks"
+    [Parameter(Mandatory = $false)] [String] $InstallationDir = "C:\Program Files\Juniper Networks",
+    [Parameter(Mandatory = $false)] [switch] $KeepContainerImages
 )
 
 function Invoke-ScriptBlockAndPrintExceptions {
@@ -212,7 +213,9 @@ function Clear-ComputeNode {
     Remove-AllContainers
     Remove-NotUsedDockerNetworks
     Uninstall-Components
-    Remove-AllDockerImages
+    if (-not ($KeepContainerImages)) {
+        Remove-AllDockerImages
+    }
     Remove-ConfigAndLogDir -ConfigAndLogDir $ConfigAndLogDir
     Remove-InstallationDirectory -InstallationDir $InstallationDir
     Stop-Service docker

@@ -21,15 +21,6 @@ function Get-ProperAgentName {
     }
 }
 
-function Get-ProperCNMPluginName {
-    $Service = Get-Service "contrail-cnm-plugin" -ErrorAction SilentlyContinue
-    if ($Service) {
-        return "contrail-cnm-plugin"
-    } else {
-        return "contrail-docker-driver"
-    }
-}
-
 function Assert-RunningAsAdmin {
     $Principal = New-Object Security.Principal.WindowsPrincipal(
         [Security.Principal.WindowsIdentity]::GetCurrent())
@@ -149,7 +140,7 @@ Describe "Diagnostic check" {
 
     Context "CNM plugin" {
         It "is running" {
-            Assert-ServicePresentAndRunning -Name (Get-ProperCNMPluginName)
+            Assert-ServicePresentAndRunning -Name "contrail-cnm-plugin"
         }
 
         It "creates a named pipe API server" {

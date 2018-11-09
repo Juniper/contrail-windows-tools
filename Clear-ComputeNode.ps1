@@ -81,22 +81,13 @@ function Remove-AgentService {
     Remove-Service -ServiceName $ServiceName
 }
 
-function Get-ProperCNMPluginName {
-    $Service = Get-Service "contrail-cnm-plugin" -ErrorAction SilentlyContinue
-    if ($Service) {
-        return "contrail-cnm-plugin"
-    } else {
-        return "contrail-docker-driver"
-    }
-}
-
-function Remove-DockerDriverService {
-    $ServiceName = Get-ProperCNMPluginName
+function Remove-CnmPluginService {
+    $ServiceName = "contrail-cnm-plugin"
     Write-Host "Stopping $ServiceName and removing service..."
     Remove-Service -ServiceName $ServiceName
     Invoke-ScriptBlockAndPrintExceptions {
-        # Docker Driver may run as a service. Or not.
-        Stop-ProcessIfExists -ProcessName "contrail-windows-docker-driver"
+        # CNM plugin may run as a service. Or not.
+        Stop-ProcessIfExists -ProcessName "contrail-cnm-plugin"
     }
 }
 
@@ -149,7 +140,7 @@ function Uninstall-Components {
     Write-Host "Uninstalling components..."
     $Failures = 0
     @(Get-WmiObject Win32_product `
-        -Filter "name='Agent' OR name='vRouter' OR name='vRouter utilities' OR name='Contrail Docker Driver'") `
+        -Filter "name='Agent' OR name='vRouter' OR name='vRouter utilities' OR name='Contrail CNM Plugin' OR name='Contrail Docker Driver'") `
         | ForEach-Object {
             msiexec.exe /x $_.IdentifyingNumber /q
             if ($LASTEXITCODE -ne 0) {
@@ -202,7 +193,7 @@ function Clear-ComputeNode {
 
     Remove-NodeMgrService
     Remove-AgentService
-    Remove-DockerDriverService
+    Remove-CnmPluginService
 
     Disable-VRouterExtension `
         -AdapterName $AdapterName `

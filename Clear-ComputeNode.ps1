@@ -91,12 +91,6 @@ function Remove-CnmPluginService {
     }
 }
 
-function Remove-DockerDriverService {
-    $ServiceName = "contrail-docker-driver"
-    Write-Host "Stopping $ServiceName and removing service..."
-    Remove-Service -ServiceName $ServiceName
-}
-
 function Disable-VRouterExtension {
     Param (
         [Parameter(Mandatory = $true)] [String] $AdapterName,
@@ -200,7 +194,6 @@ function Clear-ComputeNode {
     Remove-NodeMgrService
     Remove-AgentService
     Remove-CnmPluginService
-    Remove-DockerDriverService
 
     Disable-VRouterExtension `
         -AdapterName $AdapterName `

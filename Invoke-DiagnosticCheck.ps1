@@ -42,10 +42,11 @@ function Assert-AreDLLsPresent {
     Param (
         [Parameter(Mandatory=$true)] $ExitCode
     )
-    #https://msdn.microsoft.com/en-us/library/cc704588.aspx
-    #Value below is taken from the link above and it indicates
-    #that application failed to load some DLL.
+    # https://msdn.microsoft.com/en-us/library/cc704588.aspx
+    # Values below are taken from the link above and it indicates
+    # that application failed to load some DLL.
     $MissingDLLsErrorReturnCode = [int64]0xC0000135
+    $InvalidImageFormatErrorReturnCode = [int64]0xC000007B
     $System32Dir = "C:/Windows/System32"
 
     if ([int64]$ExitCode -eq $MissingDLLsErrorReturnCode) {
@@ -64,6 +65,10 @@ function Assert-AreDLLsPresent {
         else {
             throw "Some other not known DLL(s) couldn't be loaded"
         }
+    } elseif ([int64]$ExitCode -eq $InvalidImageFormatErrorReturnCode) {
+        throw "Invalid image format of DLLs - make sure they are 64bit"
+    } else {
+        Set-TestInconclusive "Could not determine if DLLs are present due to unrecognized error"
     }
 }
 

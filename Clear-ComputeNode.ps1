@@ -21,15 +21,6 @@ function Invoke-ScriptBlockAndPrintExceptions {
     }
 }
 
-function Stop-ProcessIfExists {
-    Param ([Parameter(Mandatory = $true)] [String] $ProcessName)
-
-    $Proc = Get-Process $ProcessName -ErrorAction SilentlyContinue
-    if ($Proc) {
-        $Proc | Stop-Process -Force -PassThru | Wait-Process -ErrorAction Stop
-    }
-}
-
 function Remove-NetNatObjects {
     Write-Host "Removing NetNat..."
     Invoke-ScriptBlockAndPrintExceptions {
@@ -49,6 +40,7 @@ function Remove-HNSNetworks {
 function Remove-Service {
     Param ([Parameter(Mandatory = $true)] [String] $ServiceName)
 
+    Write-Host "Stopping $ServiceName and removing service..."
     Invoke-ScriptBlockAndPrintExceptions {
         $Service = Get-Service $ServiceName -ErrorAction SilentlyContinue
         if ($Service -ne $null) {
@@ -58,36 +50,6 @@ function Remove-Service {
                 throw "sc.exe failed to delete service."
             }
         }
-    }
-}
-
-function Remove-NodeMgrService {
-    Write-Host "Stopping Node Manager and removing service..."
-    Remove-Service -ServiceName "contrail-vrouter-nodemgr"
-}
-
-function Get-ProperAgentName {
-    $Service = Get-Service "contrail-vrouter-agent" -ErrorAction SilentlyContinue
-    if ($Service) {
-        return "contrail-vrouter-agent"
-    } else {
-        return "ContrailAgent"
-    }
-}
-
-function Remove-AgentService {
-    $ServiceName = Get-ProperAgentName
-    Write-Host "Stopping $ServiceName and removing service..."
-    Remove-Service -ServiceName $ServiceName
-}
-
-function Remove-CnmPluginService {
-    $ServiceName = "contrail-cnm-plugin"
-    Write-Host "Stopping $ServiceName and removing service..."
-    Remove-Service -ServiceName $ServiceName
-    Invoke-ScriptBlockAndPrintExceptions {
-        # CNM plugin may run as a service. Or not.
-        Stop-ProcessIfExists -ProcessName "contrail-cnm-plugin"
     }
 }
 
@@ -191,9 +153,11 @@ function Clear-ComputeNode {
         [Parameter(Mandatory = $true)] [String] $InstallationDir
     )
 
-    Remove-NodeMgrService
-    Remove-AgentService
-    Remove-CnmPluginService
+    Remove-Service -ServiceName "contrail-vrouter-nodemgr"
+    Remove-Service -ServiceName "ContrailAgent"             # legacy name
+    Remove-Service -ServiceName "contrail-vrouter-agent"
+    Remove-Service -ServiceName "contrail-docker-driver"    # legacy name
+    Remove-Service -ServiceName "contrail-cnm-plugin"
 
     Disable-VRouterExtension `
         -AdapterName $AdapterName `

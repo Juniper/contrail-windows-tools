@@ -74,16 +74,11 @@ All operations are executed on a local machine.
 Example invocation:
 ```
 .\Clear-ComputeNode.ps1 `
-    -AdapterName "Ethernet1" `
-    -ForwardingExtensionName "vRouter forwarding extension" `
-    -VMSwitchName "Layered Ethernet1" `
     -ConfigAndLogDir "C:\ProgramData\Contrail" `
     -InstallationDir "C:\Program Files\Juniper Networks"
 ```
 
 All arguments are optional. Default values are demonstrated in the example above.
-
-Arguments `AdapterName`, `ForwardingExtensionName` and `VMSwitchName` refer to: name of physical interface controlled by vRouter, name of forwarding extension and name of virtual switch used by vRouter.
 
 ## Invoke-ScriptInRemoteSessions.ps1
 

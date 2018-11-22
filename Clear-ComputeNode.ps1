@@ -1,7 +1,4 @@
 Param (
-    [Parameter(Mandatory = $false)] [String] $AdapterName = "Ethernet1",
-    [Parameter(Mandatory = $false)] [String] $ForwardingExtensionName = "vRouter forwarding extension",
-    [Parameter(Mandatory = $false)] [String] $VMSwitchName = "Layered Ethernet1",
     [Parameter(Mandatory = $false)] [String] $ConfigAndLogDir = "C:\ProgramData\Contrail",
     [Parameter(Mandatory = $false)] [String] $InstallationDir = "C:\Program Files\Juniper Networks",
     [Parameter(Mandatory = $false)] [switch] $KeepContainerImages
@@ -53,21 +50,6 @@ function Remove-Service {
     }
 }
 
-function Disable-VRouterExtension {
-    Param (
-        [Parameter(Mandatory = $true)] [String] $AdapterName,
-        [Parameter(Mandatory = $true)] [String] $ForwardingExtensionName,
-        [Parameter(Mandatory = $true)] [String] $VMSwitchName
-    )
-    Write-Host "Disabling Extension..."
-    Invoke-ScriptBlockAndPrintExceptions {
-        Disable-VMSwitchExtension -VMSwitchName $VMSwitchName -Name $ForwardingExtensionName -ErrorAction Stop | Out-Null
-        # Two tries are intentional - it's workaround for HNS behavior.
-        Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $AdapterName | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
-        Get-ContainerNetwork | Where-Object NetworkAdapterName -eq $AdapterName | Remove-ContainerNetwork -ErrorAction Stop -Force
-    }
-}
-
 function Remove-AllContainers {
     Write-Host "Removing all containers..."
     Invoke-ScriptBlockAndPrintExceptions {
@@ -98,8 +80,8 @@ function Remove-NotUsedDockerNetworks {
     }
 }
 
-function Uninstall-Components {
-    Write-Host "Uninstalling components..."
+function Uninstall-MSIs {
+    Write-Host "Uninstalling MSIs..."
     $Failures = 0
     @(Get-WmiObject Win32_product `
         -Filter "name='Agent' OR name='vRouter' OR name='vRouter utilities' OR name='Contrail CNM Plugin' OR name='Contrail Docker Driver'") `
@@ -111,6 +93,20 @@ function Uninstall-Components {
         }
     if ($Failures -ne 0) {
         Write-Host "    ERROR: This step failed. Trying to continue, but final result is unpredictable."
+    }
+}
+
+function Uninstall-PythonPackages {
+    Write-Host "Uninstalling Python packages..."
+    $Packages = (
+        "nodemgr",
+        "sandesh",
+        "sandesh-common",
+        "vrouter",
+        "database"
+    )
+    ForEach ($p in $Packages) {
+        pip uninstall $p --yes 2> $null
     }
 }
 
@@ -146,9 +142,6 @@ function Remove-InstallationDirectory {
 
 function Clear-ComputeNode {
     Param (
-        [Parameter(Mandatory = $true)] [String] $AdapterName,
-        [Parameter(Mandatory = $true)] [String] $ForwardingExtensionName,
-        [Parameter(Mandatory = $true)] [String] $VMSwitchName,
         [Parameter(Mandatory = $true)] [String] $ConfigAndLogDir,
         [Parameter(Mandatory = $true)] [String] $InstallationDir
     )
@@ -159,29 +152,22 @@ function Clear-ComputeNode {
     Remove-Service -ServiceName "contrail-docker-driver"    # legacy name
     Remove-Service -ServiceName "contrail-cnm-plugin"
 
-    Disable-VRouterExtension `
-        -AdapterName $AdapterName `
-        -ForwardingExtensionName $ForwardingExtensionName `
-        -VMSwitchName $VMSwitchName
+    Stop-Service docker
+    Remove-NetNatObjects
+    Remove-HNSNetworks
 
     Start-Service docker
     Remove-AllContainers
     Remove-NotUsedDockerNetworks
-    Uninstall-Components
+    Uninstall-MSIs
+    Uninstall-PythonPackages
     if (-not ($KeepContainerImages)) {
         Remove-AllDockerImages
     }
     Remove-ConfigAndLogDir -ConfigAndLogDir $ConfigAndLogDir
     Remove-InstallationDirectory -InstallationDir $InstallationDir
-    Stop-Service docker
-    Remove-NetNatObjects
-    Remove-HNSNetworks
-    Start-Service docker
 }
 
 Clear-ComputeNode `
-    -AdapterName $AdapterName `
-    -ForwardingExtensionName $ForwardingExtensionName `
-    -VMSwitchName $VMSwitchName `
     -ConfigAndLogDir $ConfigAndLogDir `
     -InstallationDir $InstallationDir

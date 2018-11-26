@@ -86,7 +86,7 @@ function Uninstall-MSIs {
     @(Get-WmiObject Win32_product `
         -Filter "name='Agent' OR name='vRouter' OR name='vRouter utilities' OR name='Contrail CNM Plugin' OR name='Contrail Docker Driver'") `
         | ForEach-Object {
-            msiexec.exe /x $_.IdentifyingNumber /q
+            Start-Process -Wait -FilePath "msiexec.exe" -ArgumentList "/quiet", "/x", $_.IdentifyingNumber
             if ($LASTEXITCODE -ne 0) {
                 $Failures += 1
             }

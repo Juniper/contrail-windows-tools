@@ -18,6 +18,14 @@ Invoke-WebRequest https://raw.githubusercontent.com/Juniper/contrail-windows-too
 Invoke-WebRequest https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Clear-ComputeNode.ps1 | Invoke-Expression
 ```
 
+### Download without git
+
+```
+Invoke-WebRequest https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Invoke-ScriptInRemoteSessions.ps1 -OutFile Invoke-ScriptInRemoteSessions.ps1
+Invoke-WebRequest https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Invoke-DiagnosticCheck.ps1 -OutFile Invoke-DiagnosticCheck.ps1
+Invoke-WebRequest https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Clear-ComputeNode.ps1 -OutFile Clear-ComputeNode.ps1
+```
+
 ### Run diagnostic check on multiple Windows nodes
 
 ```

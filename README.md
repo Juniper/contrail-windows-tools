@@ -22,6 +22,14 @@ Then, install Contrail tools module:
 Install-Module -ModuleUrl https://github.com/Juniper/contrail-windows-tools/archive/master.zip
 ```
 
+## Working with Contrail-Ansible-Deployer
+
+You can specify path to `instances.yaml` file as argument to most of the functions, like so:
+
+```
+Invoke-ScriptInRemoteSessions -ScriptFileName ".\Invoke-DiagnosticCheck.ps1" -InstancesYaml .\Path\To\instances.yaml
+```
+
 ## Quick run
 
 The following snippets will run a script directly after downloading it from the Internet.
@@ -71,7 +79,7 @@ method.
 
 **Deployed via Contrail-Ansible-Deployer**
 
-You will need to specify `AdapterName` parameter to value of `WINDOWS_PHYSICAL_INTERFACE`.
+Make sure that `WINDOWS_PHYSICAL_INTERFACE` is specified in the `instances.yaml` file.
 Please refer to [official Contrail-Ansible-Deployer example](https://github.com/codilime/contrail-ansible-deployer/blob/master/config/instances.yaml.bms_win_example).
 
 **Deployed in Windows Sanity tests**
@@ -110,7 +118,7 @@ All arguments are optional. Default values are demonstrated in the example above
 
 ## Invoke-ScriptInRemoteSessions.ps1
 
-This script runs a script (specified by `ScriptFileName`) on remote compute nodes described by comma separated list of addresses given in `Addresses` argument (e.g. `"10.0.19.5,10.0.19.83"`).
+This script runs a script (specified by `ScriptFileName`) on remote compute nodes described by comma separated list of addresses given in `Addresses` argument (e.g. `"10.0.19.5,10.0.19.83"`), or, if it's specified, based on `instances.yaml` file from Contrail-Ansible-Deployer.
 
 Example invocation:
 ```
@@ -118,6 +126,7 @@ Example invocation:
     -ScriptFileName "Clear-ComputeNode.ps1" `
     -Addresses "127.0.0.1" `
     -IndividualCredentials `
+    -InstancesYaml "Some/Path/instances.yaml" `
     -SomeExampleArgumentToPass1 "Value1" `
     -SomeExampleArgumentToPass2 "Value2"
 ```

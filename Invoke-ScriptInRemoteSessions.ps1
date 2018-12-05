@@ -3,14 +3,13 @@ Param (
     [Parameter(Mandatory = $false)] [String] $Addresses = "127.0.0.1",
     [Parameter(Mandatory = $false)] [Switch] $IndividualCredentials,
     [Parameter(Mandatory = $false)] [System.Management.Automation.PSCredential] $Credential,
+    [Parameter(Mandatory = $false)] [String] $InstancesYaml = "",
     [Parameter(Mandatory = $false, ValueFromRemainingArguments = $true)] $ArgumentsToPass
 )
 
-if ($null -ne $Credential) {
-    $IndividualCredentials = $false
-}
+. $PSScriptRoot\Lib\ConfigParser\InstancesYaml.ps1
 
-function New-Sessions {
+function New-ComputeSessionsFromCommandLine {
     Param (
         [Parameter(Mandatory=$true)] [String[]] $Addresses,
         [Parameter(Mandatory = $false)] [Bool] $IndividualCredentials,
@@ -100,13 +99,20 @@ function Invoke-ScriptInRemoteSessions {
         [Parameter(Mandatory = $false)] [String] $Addresses,
         [Parameter(Mandatory = $false)] [Bool] $IndividualCredentials,
         [Parameter(Mandatory = $false)] [System.Management.Automation.PSCredential] $Credential,
+        [Parameter(Mandatory = $false)] [String] $InstancesYaml = "",
         [Parameter(Mandatory = $false)] $ArgumentsToPass
     )
 
-    $Sessions = New-Sessions `
-        -Addresses $Addresses.Split(",") `
-        -IndividualCredentials $IndividualCredentials `
-        -Credential $Credential
+    
+    $Sessions = if ($InstancesYaml -ne "") {
+        # Assumption: instances.yaml is a stronger source of truth than argument from command line.
+        New-ComputeSessionsFromInstancesYaml -PathToYaml $InstancesYaml
+    } else {
+        New-ComputeSessionsFromCommandLine `
+            -Addresses $Addresses.Split(",") `
+            -IndividualCredentials $IndividualCredentials `
+            -Credential $Credential
+    }
 
     Invoke-ScriptInSessions `
         -ScriptFileName $ScriptFileName `
@@ -120,10 +126,15 @@ function Invoke-ScriptInRemoteSessions {
 if ($MyInvocation.InvocationName -ne '.') {
     # Don't run if the file was dot - sourced (this is for backwards compatiblity from before
     # modules were introduced).
+    if ($null -ne $Credential) {
+        $IndividualCredentials = $false
+    }
+    
     Invoke-ScriptInRemoteSessions `
         -ScriptFileName $ScriptFileName `
         -Addresses $Addresses `
         -IndividualCredentials $IndividualCredentials `
         -Credential $Credential `
+        -InstancesYaml $InstancesYaml `
         -ArgumentsToPass $ArgumentsToPass
 }

@@ -3,3 +3,6 @@
 
 $InstallDir = Split-Path $MyInvocation.MyCommand.Path -Parent
 Import-Module $InstallDir\ContrailTools.psd1
+
+# Install dependencies:
+Install-Module powershell-yaml

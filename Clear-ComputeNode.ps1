@@ -173,9 +173,6 @@ if ($MyInvocation.InvocationName -ne '.') {
     # Don't run if the file was dot - sourced (this is for backwards compatiblity from before
     # modules were introduced).
     Clear-ComputeNode `
-        -AdapterName $AdapterName `
-        -ForwardingExtensionName $ForwardingExtensionName `
-        -VMSwitchName $VMSwitchName `
         -ConfigAndLogDir $ConfigAndLogDir `
         -InstallationDir $InstallationDir `
         -KeepContainerImages $KeepContainerImages

@@ -13,6 +13,8 @@ if ($null -ne $Credential) {
 function New-Sessions {
     Param (
         [Parameter(Mandatory=$true)] [String[]] $Addresses,
+        [Parameter(Mandatory = $false)] [Bool] $IndividualCredentials,
+        [Parameter(Mandatory = $false)] [System.Management.Automation.PSCredential] $Credential,
         [Parameter(Mandatory=$false)] [Int] $RetryCount = 10,
         [Parameter(Mandatory=$false)] [Int] $TimeoutMs = 5000
     )
@@ -52,7 +54,8 @@ function Close-Sessions {
 function Invoke-ScriptInSessions {
     Param (
         [Parameter(Mandatory=$true)] [String] $ScriptFileName,
-        [Parameter(Mandatory=$true)] [System.Management.Automation.Runspaces.PSSession[]] $Sessions
+        [Parameter(Mandatory=$true)] [System.Management.Automation.Runspaces.PSSession[]] $Sessions,
+        [Parameter(Mandatory = $false)] $ArgumentsToPass
     )
 
     foreach ($Session in $Sessions) {
@@ -91,6 +94,36 @@ function Invoke-ScriptInSessions {
     }
 }
 
-$Sessions = New-Sessions -Addresses $Addresses.Split(",")
-Invoke-ScriptInSessions -ScriptFileName $ScriptFileName -Sessions $Sessions
-Close-Sessions -Sessions $Sessions
+function Invoke-ScriptInRemoteSessions {
+    Param (
+        [Parameter(Mandatory = $false)] [String] $ScriptFileName,
+        [Parameter(Mandatory = $false)] [String] $Addresses,
+        [Parameter(Mandatory = $false)] [Bool] $IndividualCredentials,
+        [Parameter(Mandatory = $false)] [System.Management.Automation.PSCredential] $Credential,
+        [Parameter(Mandatory = $false)] $ArgumentsToPass
+    )
+
+    $Sessions = New-Sessions `
+        -Addresses $Addresses.Split(",") `
+        -IndividualCredentials $IndividualCredentials `
+        -Credential $Credential
+
+    Invoke-ScriptInSessions `
+        -ScriptFileName $ScriptFileName `
+        -Sessions $Sessions `
+        -ArgumentsToPass $ArgumentsToPass
+
+    Close-Sessions `
+        -Sessions $Sessions
+}
+
+if ($MyInvocation.InvocationName -ne '.') {
+    # Don't run if the file was dot - sourced (this is for backwards compatiblity from before
+    # modules were introduced).
+    Invoke-ScriptInRemoteSessions `
+        -ScriptFileName $ScriptFileName `
+        -Addresses $Addresses `
+        -IndividualCredentials $IndividualCredentials `
+        -Credential $Credential `
+        -ArgumentsToPass $ArgumentsToPass
+}

@@ -5,7 +5,7 @@ This repository contains utility scripts used for managing Contrail Windows comp
 Hopefully, they should help in operations as well as development.
 
 It is recommended to install ContrailTools module (see [Installation](#installation)), but 
-some scripts can also be ran directly after download (see [Quick run](#quick_run)).
+some scripts can also be ran directly after download (see [Quick run](#quick-run)).
 
 ## Installation
 

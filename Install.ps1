@@ -3,8 +3,6 @@
 
 $InstallDir = Split-Path $MyInvocation.MyCommand.Path -Parent
 Import-Module $InstallDir\ContrailTools.psd1
-New-Item -ItemType File -Path $here\installed.txt | Out-Null
 
-Install-Module powershell-yaml
-
-New-Item -ItemType File -Path $here\after.txt | Out-Null
+# Install dependencies
+Install-Module -ModuleUrl "https://github.com/cloudbase/powershell-yaml/archive/master.zip"

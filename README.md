@@ -19,7 +19,7 @@ Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/psget/psget
 Then, install Contrail tools module:
 
 ```
-Install-Module -ModuleUrl https://github.com/Juniper/contrail-windows-tools/archive/master.zip
+Install-Module -Startup -ModuleUrl https://github.com/Juniper/contrail-windows-tools/archive/master.zip
 ```
 
 ## Working with Contrail-Ansible-Deployer

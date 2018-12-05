@@ -1,6 +1,8 @@
 # This script is called automatically by Install-Module cmdlet, e.g. when:
 # Install-Module -ModuleUrl https://github.com/Juniper/contrail-windows-tools/archive/master.zip
 
+3/0
+
 # Install dependencies:
 Install-Module powershell-yaml
 

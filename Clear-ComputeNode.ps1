@@ -143,7 +143,8 @@ function Remove-InstallationDirectory {
 function Clear-ComputeNode {
     Param (
         [Parameter(Mandatory = $true)] [String] $ConfigAndLogDir,
-        [Parameter(Mandatory = $true)] [String] $InstallationDir
+        [Parameter(Mandatory = $true)] [String] $InstallationDir,
+        [Parameter(Mandatory = $true)] [Bool] $KeepContainerImages
     )
 
     Remove-Service -ServiceName "contrail-vrouter-nodemgr"
@@ -168,6 +169,11 @@ function Clear-ComputeNode {
     Remove-InstallationDirectory -InstallationDir $InstallationDir
 }
 
-Clear-ComputeNode `
-    -ConfigAndLogDir $ConfigAndLogDir `
-    -InstallationDir $InstallationDir
+if ($MyInvocation.InvocationName -ne '.') {
+    # Don't run if the file was dot - sourced (this is for backwards compatiblity from before
+    # modules were introduced).
+    Clear-ComputeNode `
+        -ConfigAndLogDir $ConfigAndLogDir `
+        -InstallationDir $InstallationDir `
+        -KeepContainerImages $KeepContainerImages
+}

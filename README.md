@@ -4,41 +4,57 @@ This repository contains utility scripts used for managing Contrail Windows comp
 
 Hopefully, they should help in operations as well as development.
 
-## Quick start
+It is recommended to install ContrailTools module (see [Installation](#installation)), but 
+some scripts can also be ran directly after download (see [Quick run](#quick_run)).
+
+## Installation
+
+First, install [PSGet](https://github.com/psget/psget):
+
+```
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/psget/psget/master/GetPsGet.ps1 | Invoke-Expression
+```
+
+Then, install Contrail tools module:
+
+```
+Install-Module -ModuleUrl https://github.com/Juniper/contrail-windows-tools/archive/master.zip
+```
+
+## Quick run
+
+The following snippets will run a script directly after downloading it from the Internet.
 
 ### Run diagnostic check
 
 ```
-Invoke-WebRequest https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Invoke-DiagnosticCheck.ps1 | Invoke-Expression
+Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Invoke-DiagnosticCheck.ps1 | Invoke-Expression
 ```
 
 ### Run cleanup
 
 ```
-Invoke-WebRequest https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Clear-ComputeNode.ps1 | Invoke-Expression
+Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Clear-ComputeNode.ps1 | Invoke-Expression
 ```
 
-### Download without git
-
-```
-Invoke-WebRequest https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Invoke-ScriptInRemoteSessions.ps1 -OutFile Invoke-ScriptInRemoteSessions.ps1
-Invoke-WebRequest https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Invoke-DiagnosticCheck.ps1 -OutFile Invoke-DiagnosticCheck.ps1
-Invoke-WebRequest https://raw.githubusercontent.com/Juniper/contrail-windows-tools/master/Clear-ComputeNode.ps1 -OutFile Clear-ComputeNode.ps1
-```
+## Useful snippets
 
 ### Run diagnostic check on multiple Windows nodes
 
 ```
-.\Invoke-ScriptInRemoteSessions.ps1 -ScriptFileName ".\Invoke-DiagnosticCheck.ps1" -Addresses "<IP1>,<IP2>" -Credential (Get-Credential)
+Invoke-ScriptInRemoteSessions.ps1 -ScriptFileName ".\Invoke-DiagnosticCheck.ps1" -Addresses "<IP1>,<IP2>" -Credential (Get-Credential)
 ```
 
 ### Clear multiple Windows nodes
 
 ```
-.\Invoke-ScriptInRemoteSessions.ps1 -ScriptFileName ".\Clear-ComputeNode.ps1" -Addresses "<IP1>,<IP2>" -Credential (Get-Credential)
+Invoke-ScriptInRemoteSessions.ps1 -ScriptFileName ".\Clear-ComputeNode.ps1" -Addresses "<IP1>,<IP2>" -Credential (Get-Credential)
 ```
 
-### Invoke-DiagnosticCheck.ps1
+# Scripts description 
+
+## Invoke-DiagnosticCheck.ps1
 
 This script runs on localhost and performs a series of checks to verify that Windows compute node
 is running correctly. It doesn't introduce any changes, so should be safe to run.

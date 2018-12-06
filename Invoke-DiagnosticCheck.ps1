@@ -7,10 +7,11 @@ Param (
     [Parameter(Mandatory = $false)] [String] $AdapterName = "Ethernet1",
     [Parameter(Mandatory = $false)] [String] $VHostName = "vEthernet (HNSTransparent)",
     [Parameter(Mandatory = $false)] [String] $ForwardingExtensionName = "vRouter forwarding extension",
-    [Parameter(Mandatory = $false)] [String] $ContrailLogPath = "C:\ProgramData\Contrail\var\log\contrail\"
+    [Parameter(Mandatory = $false)] [String] $ContrailLogPath = "C:\ProgramData\Contrail\var\log\contrail\",
+    [Parameter(Mandatory = $false)] [String] $InstancesYaml = ""
 )
 
-$VMSwitchName = "Layered?$AdapterName"
+. $PSScriptRoot\Lib\ConfigParser\InstancesYaml.ps1
 
 function Get-ProperAgentName {
     $Service = Get-Service "contrail-vrouter-agent" -ErrorAction SilentlyContinue
@@ -86,6 +87,7 @@ function Invoke-DiagnosticCheck {
         [Parameter(Mandatory = $false)] [String] $AdapterName,
         [Parameter(Mandatory = $false)] [String] $VHostName,
         [Parameter(Mandatory = $false)] [String] $ForwardingExtensionName,
+        [Parameter(Mandatory = $false)] [String] $VMSwitchName,
         [Parameter(Mandatory = $false)] [String] $ContrailLogPath
     )
 
@@ -345,9 +347,18 @@ function Invoke-DiagnosticCheck {
 if ($MyInvocation.InvocationName -ne '.') {
     # Don't run if the file was dot - sourced (this is for backwards compatiblity from before
     # modules were introduced).
+
+    if ($InstancesYaml -ne "") {
+        # Assumption: instances.yaml is a stronger source of truth than argument from command line.
+        $AdapterName = Get-WinPhysIfnameFromInstancesYaml -PathToYaml $InstancesYaml
+    }
+
+    $VMSwitchName = "Layered?$AdapterName"
+
     Invoke-DiagnosticCheck `
         -AdapterName $AdapterName `
         -VHostName $VHostName `
         -ForwardingExtensionName $ForwardingExtensionName `
-        -ContrailLogPath $ContrailLogPath
+        -ContrailLogPath $ContrailLogPath `
+        -VMSwitchName $VMSwitchName
 }

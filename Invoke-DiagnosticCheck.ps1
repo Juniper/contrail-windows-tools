@@ -11,7 +11,9 @@ Param (
     [Parameter(Mandatory = $false)] [String] $InstancesYaml = ""
 )
 
-. $PSScriptRoot\Lib\ConfigParser\InstancesYaml.ps1
+if ($InstancesYaml -ne ""){
+    . $PSScriptRoot\Lib\ConfigParser\InstancesYaml.ps1
+}
 
 function Get-ProperAgentName {
     $Service = Get-Service "contrail-vrouter-agent" -ErrorAction SilentlyContinue
@@ -48,7 +50,7 @@ function Assert-ServicePresentAndRunning([string]$Name) {
         | Should Be "Running"
 }
 
-function Assert-AreDLLsPresent {
+function Test-IfDLLsArePresent {
     Param (
         [Parameter(Mandatory=$true)] $ExitCode
     )
@@ -57,6 +59,7 @@ function Assert-AreDLLsPresent {
     # that application failed to load some DLL.
     $MissingDLLsErrorReturnCode = [int64]0xC0000135
     $InvalidImageFormatErrorReturnCode = [int64]0xC000007B
+    $SuccessReturnCode = [int64]0x00000000
     $System32Dir = "C:/Windows/System32"
 
     if ([int64]$ExitCode -eq $MissingDLLsErrorReturnCode) {
@@ -70,13 +73,18 @@ function Assert-AreDLLsPresent {
         }
 
         if ($MissingVisualDLLs.count -ne 0) {
-            throw "$MissingVisualDLLs must be present in $System32Dir"
+            Write-Error "$MissingVisualDLLs must be present in $System32Dir"
+            return $false
         }
         else {
-            throw "Some other not known DLL(s) couldn't be loaded"
+            Write-Error "Some other not known DLL(s) couldn't be loaded"
+            return $false
         }
     } elseif ([int64]$ExitCode -eq $InvalidImageFormatErrorReturnCode) {
-        throw "Invalid image format of DLLs - make sure they are 64bit"
+        Write-Error "Invalid image format of DLLs - make sure they are 64bit"
+        return $false
+    } elseif ([int64]$ExitCode -eq $SuccessReturnCode) {
+        return $true
     } else {
         Set-TestInconclusive "Could not determine if DLLs are present due to unrecognized error"
     }
@@ -201,15 +209,12 @@ function Invoke-DiagnosticCheck {
 
                 $Invocations = @(
                     "vif.exe",
-                    "rt.exe",
-                    "flow.exe",
-                    "nh.exe",
                     $AGENT_EXECUTABLE_PATH
                 )
 
                 foreach ($Invocation in $Invocations) {
                     & $Invocation --version 2>&1 | Out-Null
-                    { Assert-AreDLLsPresent -ExitCode $LastExitCode } | Should Not Throw
+                    Test-IfDLLsArePresent -ExitCode $LastExitCode | Should Be $true
                 }
             }
 

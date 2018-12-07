@@ -50,7 +50,7 @@ function Assert-ServicePresentAndRunning([string]$Name) {
         | Should Be "Running"
 }
 
-function Assert-AreDLLsPresent {
+function Test-IfDLLsArePresent {
     Param (
         [Parameter(Mandatory=$true)] $ExitCode
     )
@@ -214,7 +214,7 @@ function Invoke-DiagnosticCheck {
 
                 foreach ($Invocation in $Invocations) {
                     & $Invocation --version 2>&1 | Out-Null
-                    Assert-AreDLLsPresent -ExitCode $LastExitCode | Should Be $true
+                    Test-IfDLLsArePresent -ExitCode $LastExitCode | Should Be $true
                 }
             }
 

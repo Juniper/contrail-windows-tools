@@ -88,7 +88,7 @@ function Invoke-ScriptInSessions {
                     -Parameters $Using:ArgumentsToPass
             }
         } catch {
-            Write-Host "ERROR: $($_.Exception.Message)"
+            throw "ERROR: $($_.Exception.Message)"
         }
     }
 }

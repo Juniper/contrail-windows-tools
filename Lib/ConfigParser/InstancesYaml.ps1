@@ -4,12 +4,15 @@ function New-ComputeSessionsFromInstancesYaml {
     $Parsed = Read-Yaml $PathToYaml
 
     $Username = $Parsed.provider_config.bms_win.ansible_user
-    $Password = $Parsed.provider_config.bms_win.ansible_password | ConvertTo-SecureString -AsPlainText -Force
+    $PlainTextPassword = $Parsed.provider_config.bms_win.ansible_password
+    $Password = $PlainTextPassword | ConvertTo-SecureString -AsPlainText -Force
     $ComputeIPs = $Parsed.Instances.Keys `
         | Where-Object { $Parsed.Instances[$_].Provider -eq "bms_win" } `
         | ForEach-Object { $Parsed.Instances[$_].ip }
-    
-    $Creds = New-Object System.Management.Automation.PSCredential($Username, $Password)
+
+    # TODO: Domain name should be handled consistently here and in CI.
+    $DomainAndUsername = "WORKGROUP\" + $Username
+    $Creds = New-Object System.Management.Automation.PSCredential($DomainAndUsername, $Password)
     $Sessions = $ComputeIPs | ForEach-Object { New-PSSession $_ -Credential $Creds }
 
     return $Sessions

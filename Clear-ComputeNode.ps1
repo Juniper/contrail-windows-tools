@@ -28,9 +28,17 @@ function Remove-NetNatObjects {
 function Remove-HNSNetworks {
     Write-Host "Cleaning HNS state..."
     Invoke-ScriptBlockAndPrintExceptions {
-        # Two tries are intentional - it's workaround for HNS behavior.
-        Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
-        Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction Stop -Force
+        if (Get-Command -Name Get-ContainerNetwork -ErrorAction SilentlyContinue) {
+            # Two tries are intentional - it's workaround for HNS behavior.
+            Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction SilentlyContinue -Force
+            Get-ContainerNetwork | Remove-ContainerNetwork -ErrorAction Stop -Force
+        }
+        elseif (Get-Command -Name Get-HnsNetwork -ErrorAction SilentlyContinue) {
+            Get-HnsNetwork | Remove-HnsNetwork
+        }
+        else {
+            throw 'Either Get/Remove-ContainerNetwork or Get/Remove-HnsNetwork cmdlets need to be avaliable.'
+        }
     }
 }
 
@@ -84,7 +92,7 @@ function Uninstall-MSIs {
     Write-Host "Uninstalling MSIs..."
     $Failures = 0
     @(Get-WmiObject Win32_product `
-        -Filter "name='Agent' OR name='vRouter' OR name='vRouter utilities' OR name='Contrail CNM Plugin' OR name='Contrail Docker Driver'") `
+        -Filter "name='Agent' OR name='vRouter' OR name='vRouter utilities' OR name='Contrail CNM Plugin'") `
         | ForEach-Object {
             Start-Process -Wait -FilePath "msiexec.exe" -ArgumentList "/quiet", "/x", $_.IdentifyingNumber
             if ($LASTEXITCODE -ne 0) {
@@ -148,9 +156,7 @@ function Clear-ComputeNode {
     )
 
     Remove-Service -ServiceName "contrail-vrouter-nodemgr"
-    Remove-Service -ServiceName "ContrailAgent"             # legacy name
     Remove-Service -ServiceName "contrail-vrouter-agent"
-    Remove-Service -ServiceName "contrail-docker-driver"    # legacy name
     Remove-Service -ServiceName "contrail-cnm-plugin"
 
     Stop-Service docker
